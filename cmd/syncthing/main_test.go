@@ -40,9 +40,9 @@ func TestSanityCheck(t *testing.T) {
 	// Case 1 - new folder, directory and marker created
 
 	m := model.NewModel(cfg, "device", "syncthing", "dev", ldb)
-	sanityCheckFolders(cfg, m)
+	m.AddFolder(fcfg)
 
-	if cfg.Folders()["folder"].Invalid != "" {
+	if m.FolderError("folder") != "" {
 		t.Error("Unexpected error", cfg.Folders()["folder"].Invalid)
 	}
 
@@ -67,9 +67,9 @@ func TestSanityCheck(t *testing.T) {
 	})
 
 	m = model.NewModel(cfg, "device", "syncthing", "dev", ldb)
-	sanityCheckFolders(cfg, m)
+	m.AddFolder(fcfg)
 
-	if cfg.Folders()["folder"].Invalid != "" {
+	if m.FolderError("folder") != "" {
 		t.Error("Unexpected error", cfg.Folders()["folder"].Invalid)
 	}
 
@@ -88,10 +88,10 @@ func TestSanityCheck(t *testing.T) {
 	})
 
 	m = model.NewModel(cfg, "device", "syncthing", "dev", ldb)
-	sanityCheckFolders(cfg, m)
+	m.AddFolder(fcfg)
 
-	if cfg.Folders()["folder"].Invalid != "folder marker missing" {
-		t.Error("Incorrect error")
+	if m.FolderError("folder") != "marker missing" {
+		t.Error("Incorrect error: marker missing !=", m.FolderError("folder"))
 	}
 
 	// Case 4 - path missing
@@ -102,9 +102,9 @@ func TestSanityCheck(t *testing.T) {
 	})
 
 	m = model.NewModel(cfg, "device", "syncthing", "dev", ldb)
-	sanityCheckFolders(cfg, m)
+	m.AddFolder(fcfg)
 
-	if cfg.Folders()["folder"].Invalid != "folder path missing" {
-		t.Error("Incorrect error")
+	if m.FolderError("folder") != "path missing" {
+		t.Error("Incorrect error: path missing !=", m.FolderError("folder"))
 	}
 }

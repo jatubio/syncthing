@@ -117,7 +117,6 @@ func (p *rwFolder) Serve() {
 	// We don't start pulling files until a scan has been completed.
 	initialScanCompleted := false
 
-loop:
 	for {
 		select {
 		case <-p.stop:
@@ -219,15 +218,23 @@ loop:
 		// this is the easiest way to make sure we are not doing both at the
 		// same time.
 		case <-scanTimer.C:
+			if err := p.model.FolderError(p.folder); err != "" {
+				l.Infoln("Skipping folder", p.folder, "scan due to folder error", err)
+				continue
+			}
+
 			if debug {
 				l.Debugln(p, "rescan")
 			}
-			p.setState(FolderScanning)
+
 			if err := p.model.ScanFolder(p.folder); err != nil {
-				p.model.cfg.InvalidateFolder(p.folder, err.Error())
-				break loop
+				// Potentially sets the error twice, once in the scanner just
+				// by doing a check, and once here, if the error returned is
+				// the same one as returned by FolderError.
+				p.model.cfg.SetFolderError(p.folder, err.Error())
+				continue
 			}
-			p.setState(FolderIdle)
+
 			if p.scanIntv > 0 {
 				// Sleep a random time between 3/4 and 5/4 of the configured interval.
 				sleepNanos := (p.scanIntv.Nanoseconds()*3 + rand.Int63n(2*p.scanIntv.Nanoseconds())) / 4

@@ -47,16 +47,22 @@ func (s *roFolder) Serve() {
 			return
 
 		case <-timer.C:
+			if err := s.model.FolderError(s.folder); err != "" {
+				l.Infoln("Skipping folder", s.folder, "scan due to folder error", err)
+				continue
+			}
+
 			if debug {
 				l.Debugln(s, "rescan")
 			}
 
-			s.setState(FolderScanning)
 			if err := s.model.ScanFolder(s.folder); err != nil {
-				s.model.cfg.InvalidateFolder(s.folder, err.Error())
-				return
+				// Potentially sets the error twice, once in the scanner just
+				// by doing a check, and once here, if the error returned is
+				// the same one as returned by FolderError.
+				s.model.cfg.SetFolderError(s.folder, err.Error())
+				continue
 			}
-			s.setState(FolderIdle)
 
 			if !initialScanCompleted {
 				l.Infoln("Completed initial scan (ro) of folder", s.folder)
